@@ -1,0 +1,8 @@
+{
+  "name": "network-game",
+  "main": "server.js",
+  "dependencies": {
+    "express": "~4.13.0",
+    "socket.io": "~1.3.5"
+  }
+}
