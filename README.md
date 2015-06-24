@@ -8,3 +8,7 @@ Description: How networking in a video game is handled depends a lot on the genr
 
 My Project:  I plan to build a simple multiplayer game (something like pong) and  implement  a client/server with client-side prediction model.  Many games implement this model somewhat differently, so my hope is tweak it such that I come up with my own method. 
 
+## June 22
+
+So far most of my time has been devoted to reading about and playing with the technologies I plan to use.  I've built a simple little game using the Quintus engine and node.js.  I've also spent some time reading about socket.io, webRTC, UDP vs TCP for games, and the client-prediction model I'll be using.
+
