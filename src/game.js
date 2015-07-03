@@ -1,66 +1,49 @@
-
 var Game = function(type, options)
 {
-	var Q = Quintus({audioSupported: [ 'wav','mp3' ]})
-      		.include('Sprites, Scenes, Input, 2D, Anim, Touch, UI, Audio');
-	      	
-	if(type == "client")
+	this.type = type || "client";
+	this.options = options || {};
+
+	this.world = 
 	{
-		Q.setup("gameScreen", { maximize: false })
-		      .enableSound()
-		      .controls().touch();
+		width: 720,
+		height: 480
+	};
 
-		Q.gravityY = 0;
+	this.ball = new Ball();
+	this.startButton = new StartButton(this.world.width, this.world.height);
+	this.leftPaddle = new Paddle(this.world.width, this.world.height, "left");
+	this.rightPaddle = new Paddle(this.world.width, this.world.height, "right");
+}
 
-		var objectFiles = [
-			'./src/player'
-		];
+var Paddle = function(worldWidth, worldHeight, side)
+{
+	this.height = 100;
+	this.width = 10;
 
-	 	Q.Sprite.extend('Player', 
-		{
-			init: function (p) 
-			{
-				this._super(p, 
-				{
-					sheet: 'player'
-				});
-		 
-			this.add('2d, platformerControls, animation');
-		    	},
-		    	step: function (dt) 
-			{
-		      		if (Q.inputs['up'])
-					this.p.vy = -200;
-		        	else if (Q.inputs['down'])
-					this.p.vy = 200;
-		     		else if (!Q.inputs['down'] && !Q.inputs['up'])
-					this.p.vy = 0;
-		      
-		    	}
-		});
+	var padding = 10;
 
-		Q.scene('arena', function(stage)
-		{
-			stage.collisionLayer(new Q.TileLayer({ dataAsset: '/maps/arena.json', sheet: 'tiles'}));
+	this.x = (side == "left") ? 0 + padding : worldWidth - this.width - padding;
+	this.y = (worldHeight / 2) - (this.height / 2);
+}
 
+var Ball = function(x, y, radius)
+{
+	this.x = x || 50;
+	this.y = y || 50;
+	this.vx = 4;
+	this.vy = 4;
+	this.radius = radius || 5;
+}
 
-			var player = stage.insert(new Q.Player({ x: 100, y: 100 }));
-			stage.add('viewport').follow(player);
-		});
-	
+var StartButton = function(worldWidth, worldHeight, x, y)
+{
+	this.width = 100;
+	this.height = 50;
+	this.x = x || (worldWidth / 2) - (this.width / 2);
+	this.y = y || (worldHeight / 2) - (this.height / 2);
+}
 
-		var files = [
-			'/images/tiles.png',
-			'/maps/arena.json',
-			'/images/sprites.png',
-			'/images/sprites.json'
-		];
-
-		Q.load(files.join(','), function()
-		{
-			Q.sheet('tiles', '/images/tiles.png', { tilew: 32, tileh: 32});
-			Q.compileSheets('/images/sprites.png', '/images/sprites.json');
-			Q.stageScene('arena', 0);
-		});
-	}
+if('undefined' != typeof global)
+{
+	module.exports = global.Game = Game;
 }
