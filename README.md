@@ -12,3 +12,6 @@ My Project:  I plan to build a simple multiplayer game (something like pong) and
 
 So far most of my time has been devoted to reading about and playing with the technologies I plan to use.  I've built a simple little game using the Quintus engine and node.js.  I've also spent some time reading about socket.io, webRTC, UDP vs TCP for games, and the client-prediction model I'll be using.
 
+## July 5
+
+After playing around with the Quintus engine and trying to get a game engine working on both a client and a server, I realized that Quintus cannot run directly on a nodejs server.  Quintus assumes that you are running the code on a browser page, so even without rendering an image I cannot run it on nodejs.  So I had to scrap what I wrote (which admittedly wasn't much) and restart by building the game engine myself and then rendering with html5 canvas.  After thinking a bit more about the complexities of the network code I'll be writing, it is probably better this way anyways.  So I'm building pong.  The simplest game that I can think of where all this client/server prediction/correction stuff will be applicable.  So far I have just been building the ground work I'll need once I start putting in the network code -- physics/rending loops, input capturing and storage, starting a server and a client on the same engine code, ect.
