@@ -3,6 +3,9 @@ var Game = function(type, parameters)
 	this.type = type || "client";
 	this.parameters = parameters || {};
 
+	this.clientPrediction = true;
+	this.hits = 0;
+
 	this.player = null;
 	if(type == 'client')
 	{
@@ -24,24 +27,56 @@ var Game = function(type, parameters)
 
 	this.players =
 	{
-		p1 : new Player(this, "player 1"),
-		p2 : new Player(this, "player 2")
+		self : new Player(this, "self"),
+		other : new Player(this, "other")
 	};
 
 	this.ball = new Ball();
 	this.startButton = new StartButton(this.world.width, this.world.height);
-
-	this.createTimer();
-	this.createPhysicsTimer();
 }
 
 Game.prototype.updatePhysics = function()
 {
-	if(this.type == 'client')
+	if(this.type == 'client' && this.clientPrediction)
 	{
-		var y = this.processInput(this.players.p1)
-		this.players.p1.paddle.y += y;
+		var deltaY = 5 * this.processInput(this.players.self)
+		var y = this.players.self.paddle.y + deltaY;
+
+		if(y + this.players.self.paddle.height <= this.world.height && y >= 0)
+		{
+			this.players.self.paddle.y = y;
+		}
+		
+		this.players.self.stateTime = this.localTime;
 	}	
+
+	this.ball.x += this.ball.vx;
+	this.ball.y += this.ball.vy;	
+
+	if(this.collides(this.ball, this.players.self.paddle))
+	{
+		this.hits++;
+		this.ball.vx = -this.ball.vx;
+		this.ball.increaseSpeed(this.hits);
+	}
+		
+	if(this.collides(this.ball, this.players.other.paddle))
+	{
+		this.hits++;
+		this.ball.vx = -this.ball.vx;
+		this.ball.increaseSpeed(this.hits);
+	}
+
+	if(this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > this.world.height) 
+	{
+		this.ball.vy = -this.ball.vy;
+	}
+
+	if(this.ball.x - this.ball.radius < 0 || this.ball.x + this.ball.radius > this.world.width) 
+	{
+		console.log("GAME OVER"); /* Need a function to stop game for client and server  */
+		this.stopGame();
+	}
 }
 
 Game.prototype.processInput = function(player)
@@ -81,7 +116,7 @@ Game.prototype.processInput = function(player)
 
 Game.prototype.createPhysicsTimer = function()
 {
-	setInterval(function(){
+	return setInterval(function(){
 		this.pdt = (new Date().getTime() - this.pdte)/1000.0;
 		this.pdte = new Date().getTime();
 		this.updatePhysics();
@@ -90,11 +125,45 @@ Game.prototype.createPhysicsTimer = function()
 
 Game.prototype.createTimer = function()
 {
-	setInterval(function(){
+	return setInterval(function(){
 		this.dt = new Date().getTime() - this.dte;
 		this.dte = new Date().getTime();
 		this.localTime += this.dt / 1000.0;	
 	}.bind(this), 4);
+}
+
+Game.prototype.startGame = function()
+{
+	this.running = true;
+	this.timerId = this.createTimer();
+	this.physicsId = this.createPhysicsTimer();
+	
+	this.ball = new Ball();
+}
+
+Game.prototype.stopGame = function()
+{
+	this.running = false;
+	clearInterval(this.timerId);
+	clearInterval(this.physicsId);			
+}
+
+Game.prototype.collides = function(ball, paddle)
+{
+	if(ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height)
+	{
+		if(ball.x + ball.radius >= paddle.x && paddle.side == "right")
+		{
+			return true;
+		} 
+
+		if(ball.x - ball.radius <= paddle.x + paddle.width && paddle.side == "left")
+		{
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 var Player = function(gameInstance, port)
@@ -104,17 +173,23 @@ var Player = function(gameInstance, port)
 	this.lastInputSeq = -1;
 	this.lastInputTime = -1;
 	this.inputs = [];
-	
-	if(port == "player 1")
+
+	this.stateTime = new Date().getTime();
+	this.score = 0;
+
+	if(port == "self")
 		this.paddle = new Paddle(this.game.world.width, this.game.world.height, "left");
 	else 
 		this.paddle = new Paddle(this.game.world.width, this.game.world.height, "right");
+
 }
 
 var Paddle = function(worldWidth, worldHeight, side)
 {
 	this.height = 100;
 	this.width = 10;
+
+	this.side = side;
 
 	var padding = 10;
 
@@ -124,17 +199,29 @@ var Paddle = function(worldWidth, worldHeight, side)
 
 var Ball = function(x, y, radius)
 {
-	this.x = x || 50;
-	this.y = y || 50;
+	this.x = x || 200;
+	this.y = y || 200;
 	this.vx = 4;
 	this.vy = 4;
 	this.radius = radius || 5;
 }
 
+Ball.prototype.increaseSpeed = function(hits)
+{
+	if(hits % 4 == 0)
+	{
+		if(Math.abs(this.vx) < 15)
+		{
+			this.vx += (this.vx < 0) ? -2 : 2;
+			this.vy += (this.vy < 0) ? -1 : 1;
+		}
+	}	
+}
+
 var StartButton = function(worldWidth, worldHeight, x, y)
 {
-	this.width = 100;
-	this.height = 50;
+	this.width = 80;
+	this.height = 40;
 	this.x = x || (worldWidth / 2) - (this.width / 2);
 	this.y = y || (worldHeight / 2) - (this.height / 2);
 }

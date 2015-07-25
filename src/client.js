@@ -6,6 +6,7 @@ window.onload = function()
 	
 	document.addEventListener("keyup", function(event) { client.onKeyUp(event); }, false);	
 	document.addEventListener("keydown", function(event) { client.onKeyDown(event); }, false);
+	document.addEventListener("mousedown", function(event) { client.buttonClick(event); }, true);
 }
 
 var Client = function()
@@ -40,12 +41,29 @@ Client.prototype.onKeyUp = function(event)
 	this.keys[code] = false;
 }
 
+Client.prototype.buttonClick = function(event)
+{
+	var x = event.pageX - this.canvas.offsetLeft;
+	var y = event.pageY - this.canvas.offsetTop;
+
+	var start = this.game.startButton;
+	
+	if(x >= start.x && x <= start.x + start.width &&
+	   y >= start.y && y <= start.y + start.height)
+	{
+		this.game.startGame();
+	}
+}
+
 Client.prototype.update = function(time)
 {
 	this.deltaTime = this.lastFrameTime ? ( (time - this.lastFrameTime)/1000.0) : 0.016;
 	this.lastFrameTime = time;
-	
-	this.handleInput();
+
+	if(this.game.running)
+	{	
+		this.handleInput();
+	}	
 
 	this.draw();	
 
@@ -68,12 +86,21 @@ Client.prototype.handleInput = function()
 	if(input.length > 0)
 	{
 		this.inputSeq++;
-		this.game.players.p1.inputs.push({
+		this.game.players.self.inputs.push({
 			inputs: input,
 			time: this.game.localTime.toFixed(3),
 			seq: this.inputSeq
 		});	
 		
+	}
+}
+
+/* MIGHT NOT NEED THIS FUNCTION AT ALL */
+Client.prototype.updateLocalPosition = function()
+{
+	if(this.game.clientPrediction)
+	{
+		//var t = (this.game.localTime = this.game.players.self.stateTime) / this.game.pdt;		
 	}
 }
 
@@ -85,8 +112,8 @@ Client.prototype.draw = function()
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
 	/* Draw Players  */
-	var pl = this.game.players.p1.paddle;
-	var pr = this.game.players.p2.paddle;
+	var pl = this.game.players.self.paddle;
+	var pr = this.game.players.other.paddle;
 	
 	this.ctx.fillStyle = "white"
 	this.ctx.fillRect(pl.x, pl.y, pl.width, pl.height);
@@ -100,5 +127,19 @@ Client.prototype.draw = function()
 	this.ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2, false);
 	this.ctx.fill();
 
+	if(!this.game.running)
+	{
+		var start = this.game.startButton;
+
+		this.ctx.strokeStyle = "white";
+		this.ctx.lineWidth = "2";
+		this.ctx.strokeRect(start.x, start.y, start.width, start.height);
+		
+		this.ctx.font = "18px Arial, sans-serif";
+		this.ctx.textAlign = "center";
+		this.ctx.textBaseline = "middle";
+		this.ctx.fillStyle = "white";
+		this.ctx.fillText("Start", this.game.world.width / 2, this.game.world.height / 2);
+	}
 }
 
