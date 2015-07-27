@@ -2,15 +2,11 @@ var Game = function(type, parameters)
 {
 	this.type = type || "client";
 	this.parameters = parameters || {};
-
+	
+	this.self = 0;
+	
 	this.clientPrediction = true;
 	this.hits = 0;
-
-	this.player = null;
-	if(type == 'client')
-	{
-		 this.player = 1; // This should be set by the client creating the game.
-	}		
 
 	this.localTime = 0.016;
 	this.dt = new Date().getTime();
@@ -25,42 +21,57 @@ var Game = function(type, parameters)
 		height: 480
 	};
 
-	this.players =
-	{
-		self : new Player(this, "self"),
-		other : new Player(this, "other")
-	};
+	this.players = [];	
+	this.players.push(new Player(this.world, "p1"));
+        this.players.push(new Player(this.world, "p2"));
+	
 
 	this.ball = new Ball();
-	this.startButton = new StartButton(this.world.width, this.world.height);
+	this.waitingButton = new WaitingButton(this.world.width, this.world.height);
 }
 
 Game.prototype.updatePhysics = function()
 {
 	if(this.type == 'client' && this.clientPrediction)
 	{
-		var deltaY = 5 * this.processInput(this.players.self)
-		var y = this.players.self.paddle.y + deltaY;
+		var deltaY = 5 * this.processInput(this.players[this.self])
+		var y = this.players[this.self].paddle.y + deltaY;
 
-		if(y + this.players.self.paddle.height <= this.world.height && y >= 0)
+		if(y + this.players[this.self].paddle.height <= this.world.height && y >= 0)
 		{
-			this.players.self.paddle.y = y;
+			this.players[this.self].paddle.y = y;
 		}
 		
-		this.players.self.stateTime = this.localTime;
+		this.players[this.self].stateTime = this.localTime;
+	}	
+
+	if(this.type == 'server')
+	{
+		for(var i = 0; i < 2; i++)
+		{
+			var deltaY = 5 * this.processInput(this.players[i])
+			var y = this.players[i].paddle.y + deltaY;
+
+			if(y + this.players[i].paddle.height <= this.world.height && y >= 0)
+			{
+				this.players[i].paddle.y = y;
+			}
+			
+			this.players[i].inputs = [];
+		}
 	}	
 
 	this.ball.x += this.ball.vx;
 	this.ball.y += this.ball.vy;	
 
-	if(this.collides(this.ball, this.players.self.paddle))
+	if(this.collides(this.ball, this.players[0].paddle))
 	{
 		this.hits++;
 		this.ball.vx = -this.ball.vx;
 		this.ball.increaseSpeed(this.hits);
 	}
 		
-	if(this.collides(this.ball, this.players.other.paddle))
+	if(this.collides(this.ball, this.players[1].paddle))
 	{
 		this.hits++;
 		this.ball.vx = -this.ball.vx;
@@ -75,7 +86,7 @@ Game.prototype.updatePhysics = function()
 	if(this.ball.x - this.ball.radius < 0 || this.ball.x + this.ball.radius > this.world.width) 
 	{
 		console.log("GAME OVER"); /* Need a function to stop game for client and server  */
-		this.stopGame();
+		this.endGame(); /* Stopping the game should only be done by the server */
 	}
 }
 
@@ -134,14 +145,20 @@ Game.prototype.createTimer = function()
 
 Game.prototype.startGame = function()
 {
+	this.endGame(); /* Force the game to stop first. */
+
 	this.running = true;
 	this.timerId = this.createTimer();
 	this.physicsId = this.createPhysicsTimer();
 	
-	this.ball = new Ball();
+	this.ball.reset();
+	this.players[0].paddle.reset();
+	this.players[1].paddle.reset();
+
+	console.log(this.ball.vx, this.ball.vy);
 }
 
-Game.prototype.stopGame = function()
+Game.prototype.endGame = function()
 {
 	this.running = false;
 	clearInterval(this.timerId);
@@ -166,10 +183,8 @@ Game.prototype.collides = function(ball, paddle)
 	return false;
 }
 
-var Player = function(gameInstance, port)
+var Player = function(world, port)
 {
-	this.game = gameInstance;
-
 	this.lastInputSeq = -1;
 	this.lastInputTime = -1;
 	this.inputs = [];
@@ -177,33 +192,46 @@ var Player = function(gameInstance, port)
 	this.stateTime = new Date().getTime();
 	this.score = 0;
 
-	if(port == "self")
-		this.paddle = new Paddle(this.game.world.width, this.game.world.height, "left");
+	if(port == "p1")
+		this.paddle = new Paddle(world.width, world.height, "left");
 	else 
-		this.paddle = new Paddle(this.game.world.width, this.game.world.height, "right");
+		this.paddle = new Paddle(world.width, world.height, "right");
 
 }
 
 var Paddle = function(worldWidth, worldHeight, side)
 {
+	this.worldWidth = worldWidth;
+	this.worldHeight = worldHeight;
+
 	this.height = 100;
 	this.width = 10;
 
 	this.side = side;
 
-	var padding = 10;
-
-	this.x = (side == "left") ? 0 + padding : worldWidth - this.width - padding;
-	this.y = (worldHeight / 2) - (this.height / 2);
+	this.padding = 10;
+	
+	this.reset = function()
+	{
+		this.x = (this.side == "left") ? 0 + this.padding : this.worldWidth - this.width - this.padding;
+		this.y = (this.worldHeight / 2) - (this.height / 2);
+	}	
+	
+	this.reset();
 }
 
-var Ball = function(x, y, radius)
+var Ball = function()
 {
-	this.x = x || 200;
-	this.y = y || 200;
-	this.vx = 4;
-	this.vy = 4;
-	this.radius = radius || 5;
+	this.reset = function()
+	{
+		this.x = 200;
+		this.y = 200;
+		this.vx = 2;
+		this.vy = 2;
+	}
+
+	this.reset();
+	this.radius = 5;
 }
 
 Ball.prototype.increaseSpeed = function(hits)
@@ -218,7 +246,7 @@ Ball.prototype.increaseSpeed = function(hits)
 	}	
 }
 
-var StartButton = function(worldWidth, worldHeight, x, y)
+var WaitingButton = function(worldWidth, worldHeight, x, y)
 {
 	this.width = 80;
 	this.height = 40;

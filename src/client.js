@@ -6,7 +6,7 @@ window.onload = function()
 	
 	document.addEventListener("keyup", function(event) { client.onKeyUp(event); }, false);	
 	document.addEventListener("keydown", function(event) { client.onKeyDown(event); }, false);
-	document.addEventListener("mousedown", function(event) { client.buttonClick(event); }, true);
+	//document.addEventListener("mousedown", function(event) { client.buttonClick(event); }, true);
 }
 
 var Client = function()
@@ -22,6 +22,8 @@ var Client = function()
 	this.inputSeq = 0;
 
 	this.keys = {};
+
+	this.connectToServer();
 }
 
 Client.prototype.pressed = function(code)
@@ -41,6 +43,7 @@ Client.prototype.onKeyUp = function(event)
 	this.keys[code] = false;
 }
 
+/*
 Client.prototype.buttonClick = function(event)
 {
 	var x = event.pageX - this.canvas.offsetLeft;
@@ -51,9 +54,10 @@ Client.prototype.buttonClick = function(event)
 	if(x >= start.x && x <= start.x + start.width &&
 	   y >= start.y && y <= start.y + start.height)
 	{
-		this.game.startGame();
+		//this.game.startGame();
 	}
 }
+*/
 
 Client.prototype.update = function(time)
 {
@@ -86,12 +90,18 @@ Client.prototype.handleInput = function()
 	if(input.length > 0)
 	{
 		this.inputSeq++;
-		this.game.players.self.inputs.push({
+		this.game.players[this.player].inputs.push({
 			inputs: input,
 			time: this.game.localTime.toFixed(3),
 			seq: this.inputSeq
 		});	
 		
+		var inputPacket = 'i.' +
+				input.join('-') + '.' +
+				this.game.localTime.toFixed(3).replace('.', '-') + '.' +
+				this.inputSeq;
+
+		this.socket.send(inputPacket);
 	}
 }
 
@@ -112,8 +122,8 @@ Client.prototype.draw = function()
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
 	/* Draw Players  */
-	var pl = this.game.players.self.paddle;
-	var pr = this.game.players.other.paddle;
+	var pl = this.game.players[0].paddle;
+	var pr = this.game.players[1].paddle;
 	
 	this.ctx.fillStyle = "white"
 	this.ctx.fillRect(pl.x, pl.y, pl.width, pl.height);
@@ -129,17 +139,86 @@ Client.prototype.draw = function()
 
 	if(!this.game.running)
 	{
-		var start = this.game.startButton;
+		var waiting = this.game.waitingButton;
 
 		this.ctx.strokeStyle = "white";
 		this.ctx.lineWidth = "2";
-		this.ctx.strokeRect(start.x, start.y, start.width, start.height);
+		this.ctx.strokeRect(waiting.x, waiting.y, waiting.width, waiting.height);
 		
 		this.ctx.font = "18px Arial, sans-serif";
 		this.ctx.textAlign = "center";
 		this.ctx.textBaseline = "middle";
 		this.ctx.fillStyle = "white";
-		this.ctx.fillText("Start", this.game.world.width / 2, this.game.world.height / 2);
+		this.ctx.fillText("Waiting", this.game.world.width / 2, this.game.world.height / 2);
 	}
+}
+
+Client.prototype.connectToServer = function()
+{
+	this.socket = io.connect();	
+	
+	this.socket.on('connect', this.onConnecting.bind(this));
+	this.socket.on('onconnected', this.onConnected.bind(this));
+	this.socket.on('disconnect', this.onDisconnect.bind(this));
+	this.socket.on('error', this.onDisconnect.bind(this));
+	this.socket.on('onserverupdate', this.onServerUpdate.bind(this));
+	this.socket.on('message', this.onMessage.bind(this));
+}
+
+Client.prototype.onConnecting = function()
+{
+	this.state = 'connecting';
+	console.log("connecting");	
+}
+
+Client.prototype.onConnected = function(data)
+{
+	this.state = 'connected';
+	
+	this.game.self = data.player;	
+	this.player = data.player;
+
+	console.log("connected");
+}
+
+Client.prototype.onDisconnect = function()
+{
+	console.log("disconnect");
+}
+
+Client.prototype.onServerUpdate = function(data)
+{
+	this.game.players[0].paddle.y = data.p1;
+	this.game.players[1].paddle.y = data.p2;
+	this.game.players[0].lastInputSeq = data.p1seq;
+	this.game.players[1].lastInputSeq = data.p2seq;
+	this.game.ball.y = data.ball.y;
+	this.game.ball.x = data.ball.x;	
+	this.game.ball.vy = data.ball.vy;
+	this.game.ball.vx = data.ball.vx;
+	this.serverTime = data.time	
+}
+
+Client.prototype.onMessage = function(data)
+{
+	console.log("message");
+	
+	var commands = data.split('.');
+	var command = commands[0];
+	var subcommand = commands[1] || null;
+	var commanddata = commands[2] || null;
+
+	switch(command)
+	{
+		case 's': /* Server Command  */	
+			switch(subcommand)
+			{
+				case 's' : /* Start Game  */
+					this.game.startGame(); break;
+				case 'e' : /* End Game */
+					this.game.endGame(); break;
+			}
+		break;
+	}	
 }
 
