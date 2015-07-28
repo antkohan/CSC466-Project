@@ -47,8 +47,8 @@ sio.sockets.on('connection', function(client)
 
 	client.on('disconnect', function()
 	{
-		gameServer.removePlayer(client);
 		gameServer.endGame(client.gameId);
+		gameServer.removePlayer(client);
 		console.log("Player " + client.userId + " has disconnected!");
 		//console.log(gameServer.games);
 	});

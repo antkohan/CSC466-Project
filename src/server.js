@@ -1,6 +1,9 @@
+require('./game.js');
+
 var Server = module.exports = { games : {}, numgames: 0};
 
-require('./game.js');
+Server.fakeLatency = 100;
+Server.messages = [];
 
 Server.update = function()
 {
@@ -12,6 +15,8 @@ Server.update = function()
 			p2: this.games[i].core.players[1].paddle.y,
 			p1seq: this.games[i].core.players[0].lastInputSeq,
 			p2seq: this.games[i].core.players[1].lastInputSeq,	
+			p1sc: this.games[i].core.players[0].score,
+			p2sc: this.games[i].core.players[1].score,	
 			ball: this.games[i].core.ball,
 			time: this.games[i].core.localTime
 		}
@@ -86,8 +91,6 @@ Server.endGame = function(gameId)
 {
 	console.log("Game " + gameId + " has ended!");
 
-	
-	/* This needs to be fixed for when there are no players  */
 	this.games[gameId].core.endGame();
 
 	for(var i = 0; i < this.games[gameId].players.length; i++)
@@ -122,6 +125,27 @@ Server.onInput = function(client, parts)
 
 Server.onMessage = function(client, message)
 {
+	if(this.fakeLatency > 0 && message.split('.')[0].substr(0,1) == 'i')
+	{
+		this.messages.push({client: client, message: message});
+
+		setTimeout(function()
+		{
+			if(this.messages.length > 0)
+			{
+				this.handleMessage(this.messages[0].client, this.messages[0].message);
+				this.messages.splice(0,1);
+			}	
+		}.bind(this), this.fakeLatency);
+	}
+	else
+	{
+		this.handleMessage(client, message);
+	}
+}
+	
+Server.handleMessage = function(client, message)
+{
 	var parts = message.split('.');
 	var type = parts[0];
 
@@ -140,9 +164,8 @@ Server.onMessage = function(client, message)
 		case 'l':
 		break;
 	}	
-
 }
-	
+
 Server.createUpdateTimer = function()
 {
 	return setInterval(function(){

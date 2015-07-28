@@ -5,8 +5,7 @@ var Game = function(type, parameters)
 	
 	this.self = 0;
 	
-	this.clientPrediction = true;
-	this.hits = 0;
+	this.clientPrediction = false;
 
 	this.localTime = 0.016;
 	this.dt = new Date().getTime();
@@ -66,16 +65,16 @@ Game.prototype.updatePhysics = function()
 
 	if(this.collides(this.ball, this.players[0].paddle))
 	{
-		this.hits++;
+		this.ball.hits++;
 		this.ball.vx = -this.ball.vx;
-		this.ball.increaseSpeed(this.hits);
+		this.ball.increaseSpeed(this.ball.hits);
 	}
 		
 	if(this.collides(this.ball, this.players[1].paddle))
 	{
-		this.hits++;
+		this.ball.hits++;
 		this.ball.vx = -this.ball.vx;
-		this.ball.increaseSpeed(this.hits);
+		this.ball.increaseSpeed(this.ball.hits);
 	}
 
 	if(this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > this.world.height) 
@@ -83,10 +82,24 @@ Game.prototype.updatePhysics = function()
 		this.ball.vy = -this.ball.vy;
 	}
 
-	if(this.ball.x - this.ball.radius < 0 || this.ball.x + this.ball.radius > this.world.width) 
+	if(this.ball.x - this.ball.radius < 0)
 	{
-		console.log("GAME OVER"); /* Need a function to stop game for client and server  */
-		this.endGame(); /* Stopping the game should only be done by the server */
+		this.players[1].score++;
+
+		this.players[0].paddle.reset();
+		this.players[1].paddle.reset();			
+	
+		this.ball.reset();
+	}
+	
+	if(this.ball.x + this.ball.radius > this.world.width)
+	{
+		this.players[0].score++;
+
+		this.players[0].paddle.reset();
+		this.players[1].paddle.reset();			
+	
+		this.ball.reset();
 	}
 }
 
@@ -154,8 +167,6 @@ Game.prototype.startGame = function()
 	this.ball.reset();
 	this.players[0].paddle.reset();
 	this.players[1].paddle.reset();
-
-	console.log(this.ball.vx, this.ball.vy);
 }
 
 Game.prototype.endGame = function()
@@ -204,7 +215,7 @@ var Paddle = function(worldWidth, worldHeight, side)
 	this.worldWidth = worldWidth;
 	this.worldHeight = worldHeight;
 
-	this.height = 100;
+	this.height = 60;
 	this.width = 10;
 
 	this.side = side;
@@ -228,15 +239,16 @@ var Ball = function()
 		this.y = 200;
 		this.vx = 2;
 		this.vy = 2;
+		this.hits = 0;
 	}
 
 	this.reset();
 	this.radius = 5;
 }
 
-Ball.prototype.increaseSpeed = function(hits)
+Ball.prototype.increaseSpeed = function()
 {
-	if(hits % 4 == 0)
+	if(this.hits % 4 == 0)
 	{
 		if(Math.abs(this.vx) < 15)
 		{

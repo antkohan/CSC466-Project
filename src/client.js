@@ -137,8 +137,26 @@ Client.prototype.draw = function()
 	this.ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2, false);
 	this.ctx.fill();
 
+	/* Draw Scores */
+	this.ctx.font = "bolder 50px Arial, sans-serif";
+	this.ctx.fillStyle = "white";
+
+	this.ctx.fillText("" + this.game.players[0].score, this.game.world.width/2 - 60, 60);
+	this.ctx.fillText("" + this.game.players[1].score, this.game.world.width/2 + 60, 60);
+
+	if(this.game.running)
+	{
+		/* Draw Dividing Line  */
+		for(var i = 5; i < this.game.world.height; i += 35)
+		{
+			this.ctx.fillStyle = "white";
+			this.ctx.fillRect(this.game.world.width/2 - 3, i, 6, 15);
+		}
+	}
+
 	if(!this.game.running)
 	{
+		/* Draw Waiting Box  */
 		var waiting = this.game.waitingButton;
 
 		this.ctx.strokeStyle = "white";
@@ -150,6 +168,7 @@ Client.prototype.draw = function()
 		this.ctx.textBaseline = "middle";
 		this.ctx.fillStyle = "white";
 		this.ctx.fillText("Waiting", this.game.world.width / 2, this.game.world.height / 2);
+	
 	}
 }
 
@@ -183,19 +202,24 @@ Client.prototype.onConnected = function(data)
 
 Client.prototype.onDisconnect = function()
 {
+	this.game.endGame();
 	console.log("disconnect");
 }
 
 Client.prototype.onServerUpdate = function(data)
 {
+	/* This is an ugly way to set a state. Should change this.  */
 	this.game.players[0].paddle.y = data.p1;
 	this.game.players[1].paddle.y = data.p2;
 	this.game.players[0].lastInputSeq = data.p1seq;
 	this.game.players[1].lastInputSeq = data.p2seq;
+	this.game.players[0].score = data.p1sc;
+	this.game.players[1].score = data.p2sc;
 	this.game.ball.y = data.ball.y;
 	this.game.ball.x = data.ball.x;	
 	this.game.ball.vy = data.ball.vy;
 	this.game.ball.vx = data.ball.vx;
+	this.game.ball.hits = data.ball.hits;
 	this.serverTime = data.time	
 }
 
