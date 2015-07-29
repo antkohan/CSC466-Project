@@ -5,7 +5,7 @@ var Game = function(type, parameters)
 	
 	this.self = 0;
 	
-	this.clientPrediction = false;
+	this.clientPrediction = true;
 
 	this.localTime = 0.016;
 	this.dt = new Date().getTime();
@@ -85,20 +85,12 @@ Game.prototype.updatePhysics = function()
 	if(this.ball.x - this.ball.radius < 0)
 	{
 		this.players[1].score++;
-
-		this.players[0].paddle.reset();
-		this.players[1].paddle.reset();			
-	
 		this.ball.reset();
 	}
 	
 	if(this.ball.x + this.ball.radius > this.world.width)
 	{
 		this.players[0].score++;
-
-		this.players[0].paddle.reset();
-		this.players[1].paddle.reset();			
-	
 		this.ball.reset();
 	}
 }
@@ -192,6 +184,13 @@ Game.prototype.collides = function(ball, paddle)
 	}
 	
 	return false;
+}
+
+Game.prototype.lerp = function(value1, value2, weight)
+{
+	var w = Number(weight);	
+	w = Math.max(0, Math.min(1, w));
+	return value1 + w * (value2 - value1);
 }
 
 var Player = function(world, port)

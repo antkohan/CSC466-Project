@@ -125,6 +125,7 @@ Server.onInput = function(client, parts)
 
 Server.onMessage = function(client, message)
 {
+	/* Apply fake latency to input messages only  */
 	if(this.fakeLatency > 0 && message.split('.')[0].substr(0,1) == 'i')
 	{
 		this.messages.push({client: client, message: message});
@@ -152,17 +153,10 @@ Server.handleMessage = function(client, message)
 	switch(type)
 	{
 		case 'i': 	
-			this.onInput(client, parts);
-		break;
+			this.onInput(client, parts); break;
 		
 		case 'p':
-		break;
-			
-		case 'c':
-		break;
-		
-		case 'l':
-		break;
+			client.send('s.p.' + parts[1]); break;			
 	}	
 }
 
@@ -170,5 +164,5 @@ Server.createUpdateTimer = function()
 {
 	return setInterval(function(){
 		this.update();
-	}.bind(this), 25);
+	}.bind(this), 45);
 }
