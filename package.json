@@ -1,8 +1,14 @@
 {
-  "name": "network-game",
+  "name": "internetpong",
   "main": "app.js",
   "dependencies": {
     "express": "~4.13.0",
     "socket.io": "~1.3.5"
+  },
+  "engines": {
+	"node": "0.10.25"	
+  },
+  "scripts": {
+	"start": "node app.js" 
   }
 }
