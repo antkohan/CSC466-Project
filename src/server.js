@@ -2,7 +2,7 @@ require('./game.js');
 
 var Server = module.exports = { games : {}, numgames: 0};
 
-Server.fakeLatency = 100;
+Server.fakeLatency = 0;
 Server.messages = [];
 
 Server.update = function()
