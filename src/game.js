@@ -159,6 +159,8 @@ Game.prototype.startGame = function()
 	this.ball.reset();
 	this.players[0].paddle.reset();
 	this.players[1].paddle.reset();
+	this.players[0].score = 0;
+	this.players[1].score = 0;
 }
 
 Game.prototype.endGame = function()

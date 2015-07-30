@@ -38,6 +38,7 @@ var Client = function()
 
 	this.connectToServer();
 	this.createPingTimer();
+	this.createUI();
 }
 
 Client.prototype.pressed = function(code)
@@ -287,6 +288,73 @@ Client.prototype.draw = function()
 	}
 }
 
+Client.prototype.createUI = function()
+{
+	var that = this;
+
+	/* Prediction CheckBox  */
+	var checked = document.createAttribute("checked");
+
+	var type = document.createAttribute("type");
+	type.value = "checkbox";
+
+	var predictionLabel = document.createElement("label");
+	predictionLabel.innerHTML = "Prediction";
+
+	var predictionBox = document.createElement("input");
+	predictionBox.setAttributeNode(type);
+	predictionBox.setAttributeNode(checked);
+	predictionBox.onclick = function()
+	{
+		that.togglePrediction();
+	}
+
+	predictionLabel.appendChild(predictionBox);
+
+	/* Naive CheckBox  */
+	var checked = document.createAttribute("checked");
+
+	var type = document.createAttribute("type");
+	type.value = "checkbox";
+
+	var naiveLabel = document.createElement("label");
+	naiveLabel.innerHTML = "Correction";
+
+	var naiveBox = document.createElement("input");
+	naiveBox.setAttributeNode(type);
+	naiveBox.setAttributeNode(checked);
+	naiveBox.onclick = function()
+	{
+		that.toggleNaive();
+	}
+
+	naiveLabel.appendChild(naiveBox);
+
+	/* Smooth CheckBox  */
+	var checked = document.createAttribute("checked");
+
+	var type = document.createAttribute("type");
+	type.value = "checkbox";
+
+	var smoothLabel = document.createElement("label");
+	smoothLabel.innerHTML = "Smoothing";
+
+	var smoothBox = document.createElement("input");
+	smoothBox.setAttributeNode(type);
+	smoothBox.setAttributeNode(checked);
+	smoothBox.onclick = function()
+	{
+		that.toggleSmooth();
+	}
+
+	smoothLabel.appendChild(smoothBox);
+
+	var checkDiv = document.getElementById("checkBoxs");
+	checkDiv.appendChild(predictionLabel);	
+	checkDiv.appendChild(naiveLabel);
+	checkDiv.appendChild(smoothLabel);
+}
+
 Client.prototype.createPingTimer = function()
 {
 	setInterval(function()
@@ -394,4 +462,18 @@ Client.prototype.onMessage = function(data)
 	}	
 }
 
+Client.prototype.togglePrediction = function()
+{
+	this.game.clientPrediction = (this.game.clientPrediction) ? false : true;
+}
 
+Client.prototype.toggleNaive = function()
+{
+	this.naive = (this.naive) ? false : true;
+	console.log(this.naive);
+}
+
+Client.prototype.toggleSmooth = function()
+{
+	this.smooth = (this.smooth) ? false : true;
+}
