@@ -81,11 +81,11 @@ Client.prototype.handleInput = function()
 {
 	var input = [];
 
-	if(this.pressed(87) == true)
+	if(this.pressed(87) == true || this.pressed(38) == true)
 	{
 		input.push('u');
 	}		
-	if(this.pressed(83) == true)
+	if(this.pressed(83) == true || this.pressed(40) == true)
 	{
 		input.push('d');
 	}
