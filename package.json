@@ -9,6 +9,6 @@
 	"node": "0.10.25"	
   },
   "scripts": {
-	"start": "node app.js" 
+	"start": "nodejs app.js" 
   }
 }
